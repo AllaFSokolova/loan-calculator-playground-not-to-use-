@@ -18,7 +18,7 @@ start_date = st.date_input("Дата начала кредита:", value=dateti
 payment_period = st.number_input("Период платежа (в днях):", value=30, min_value=1)
 loan_period = st.number_input("Срок кредита (в днях):", value=360, min_value=1)
 amount = st.number_input("Сумма:", value=1000, min_value=0)
-comission = st.number_input("Разовая комиссия (%):", value=5)
+comission = st.number_input("Разовая комиссия (%):", value=15)
 product_4_5 = st.checkbox("Продукт 4 / 5", value=False)
 dynamic_body_paments = st.checkbox("Предусмотрены частичные погашения тела", value=False)
 accrued_period = st.number_input("Начисления процентов раз в (дни):", value=1, min_value=1)
@@ -29,10 +29,10 @@ accrued_end = st.selectbox("Начисления по принципу:", option
     index=2)
 
 st.subheader("Введите параметры для интервалов:")
-num_intervals = st.number_input("Количество интервалов:", value=3, min_value=1, max_value=30, step=1)
+num_intervals = st.number_input("Количество интервалов:", value=1, min_value=1, max_value=30, step=1)
 
-days = [0] * num_intervals
-rates = [0.0000] * num_intervals
+days = [180] * num_intervals
+rates = [1.0000] * num_intervals
 supports = [0.0000] * num_intervals
 bodies = [0] * num_intervals
 
@@ -364,12 +364,27 @@ def calendar_body(dynamic_body_paments, schema, start_date, payment_period, loan
     
     return calendar_body_df
     
-def daily_rates_amount_schema (rates_df, body_df, accrued_period):
+def daily_rates_amount_schema (rates_df, body_df, accrued_period, interval_params, comission, payment_period, loan_period, start_date):
     one_day_df = payment_calendar_builder(start_date, accrued_period, loan_period)
+    
+    df = build_payments_schema (interval_params, comission, payment_period, loan_period)
+        
+    df_dates = adding_dates (df, start_date, payment_period)
+
+    payment_calendar_df = payment_calendar_builder (start_date, payment_period, loan_period)
+
+    last_rate = last_rate_calculation(df_dates, payment_calendar_df)
+
+    one_day_df['rate'] = 1  # Default value
+    interval_days = interval_params[0][0][0]  # Extract the number of days from interval_params
+    one_day_df['rate'] = one_day_df.apply(
+        lambda row: last_rate if row['payment_date'] > pd.Timestamp(start_date) + timedelta(days=interval_days) else 1,
+        axis=1
+    )
+
     for i in range(1, len(one_day_df)):
         for j in range(len(rates_df)):
             if one_day_df.loc[i, 'payment_date'] in rates_df.loc[j, 'date_ranges']:
-                one_day_df.loc[i, 'rate'] = rates_df.loc[j, 'rate']
                 one_day_df.loc[i, 'support'] = rates_df.loc[j, 'support']
                     
     for i in range(len(one_day_df)):
@@ -457,7 +472,7 @@ def first_part_builder (start_date,
     
     body_df = calendar_body (dynamic_body_paments, rates['schema'], start_date, payment_period, loan_period, amount)
     
-    daily_schema = daily_rates_amount_schema (rates["df"], body_df, accrued_period)
+    daily_schema = daily_rates_amount_schema (rates["df"], body_df, accrued_period, interval_params, comission, payment_period, loan_period, start_date)
     
     rates_absolute = shift_one_day_payment(daily_schema, amount, accrued_end, payment_period)
     
