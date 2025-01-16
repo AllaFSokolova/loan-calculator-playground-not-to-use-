@@ -7,7 +7,7 @@ from PIL import Image
 
 
 
-st.title("Кредитный калькулятор")
+st.title("Кредитный калькулятор (daily)")
 
 img = Image.open('calculator.jpg')
 img_resized = img.resize((600, 350))
