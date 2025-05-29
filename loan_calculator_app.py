@@ -29,7 +29,7 @@ accrued_end = st.selectbox("Начисления по принципу:", option
     index=2)
 
 st.subheader("Введите параметры для интервалов:")
-num_intervals = st.number_input("Количество интервалов:", value=1, min_value=1, max_value=1, step=1)
+num_intervals = st.number_input("Количество интервалов:", value=2, min_value=2, max_value=2, step=1)
 
 days = [180] * num_intervals
 rates = [1.0000] * num_intervals
