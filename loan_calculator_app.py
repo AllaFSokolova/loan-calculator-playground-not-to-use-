@@ -17,7 +17,7 @@ st.image(img_resized, use_container_width = True)
 start_date = st.date_input("Дата начала кредита:", value=datetime.today().date())
 payment_period = st.number_input("Период платежа (в днях):", value=16, min_value=1)
 loan_period = st.number_input("Срок кредита (в днях):", value=360, min_value=1)
-amount = st.number_input("Сумма:", value=2500, min_value=0)
+amount = st.number_input("Сумма:", value=10000, min_value=0)
 comission = st.number_input("Разовая комиссия (%):", value=15)
 product_4_5 = st.checkbox("Продукт 4 / 5", value=False)
 dynamic_body_paments = st.checkbox("Предусмотрены частичные погашения тела", value=False)
@@ -31,8 +31,8 @@ accrued_end = st.selectbox("Начисления по принципу:", option
 st.subheader("Введите параметры для интервалов:")
 num_intervals = st.number_input("Количество интервалов:", value=2, min_value=2, max_value=2, step=1)
 
-days = [180] * num_intervals
-rates = [1.0000] * num_intervals
+days = [0] * num_intervals
+rates = [0.0000] * num_intervals
 supports = [0.0000] * num_intervals
 bodies = [0] * num_intervals
 
