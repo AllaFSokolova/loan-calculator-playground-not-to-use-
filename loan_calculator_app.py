@@ -82,9 +82,8 @@ def payment_calendar_builder(start_date, payment_period, loan_period):
     date = datetime.strptime(start_date, '%Y-%m-%d')
     payment_calendar = [date]
 
-    end_date = date + timedelta(days=loan_period-1)
+    end_date = date + timedelta(days=loan_period)
 
-    date = date - timedelta(days=1)
     while date < end_date:
         date = date + timedelta(days=payment_period)
         if date < end_date:
