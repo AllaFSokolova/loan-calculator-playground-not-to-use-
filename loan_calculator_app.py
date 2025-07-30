@@ -7,7 +7,7 @@ from PIL import Image
 
 
 
-st.title("Кредитный калькулятор (daily)")
+st.title("Кредитный калькулятор")
 
 img = Image.open('calculator.jpg')
 img_resized = img.resize((600, 350))
@@ -15,10 +15,10 @@ st.image(img_resized, use_container_width = True)
 
 # ----------------------->>>>>>>>>>>>  Initial Parameters  <<<<<<<<<<<------------------------------
 start_date = st.date_input("Дата начала кредита:", value=datetime.today().date())
-payment_period = st.number_input("Период платежа (в днях):", value=16, min_value=1)
+payment_period = st.number_input("Период платежа (в днях):", value=30, min_value=1)
 loan_period = st.number_input("Срок кредита (в днях):", value=360, min_value=1)
-amount = st.number_input("Сумма:", value=10000, min_value=0)
-comission = st.number_input("Разовая комиссия (%):", value=15)
+amount = st.number_input("Сумма:", value=1000, min_value=0)
+comission = st.number_input("Разовая комиссия (%):", value=5)
 product_4_5 = st.checkbox("Продукт 4 / 5", value=False)
 dynamic_body_paments = st.checkbox("Предусмотрены частичные погашения тела", value=False)
 accrued_period = st.number_input("Начисления процентов раз в (дни):", value=1, min_value=1)
@@ -29,7 +29,7 @@ accrued_end = st.selectbox("Начисления по принципу:", option
     index=2)
 
 st.subheader("Введите параметры для интервалов:")
-num_intervals = st.number_input("Количество интервалов:", value=2, min_value=2, max_value=2, step=1)
+num_intervals = st.number_input("Количество интервалов:", value=3, min_value=1, max_value=30, step=1)
 
 days = [0] * num_intervals
 rates = [0.0000] * num_intervals
@@ -136,10 +136,10 @@ def build_payments_schema(interval_params, comission, payment_period, loan_perio
             else:
                 body_list = bodies[:]
             
-            if i == 0: 
-                sum_i = rate_ * days_ + support_ * days_ + local_comission # <<-- change here 'days_' to 'coef_ * period'
+            if i == 0:
+                sum_i = rate_ * coef_ * period + support_ * coef_ * period + local_comission
             else:
-                sum_i = rate_ * (1 - sum(body_list[:i]) / 100) * days_ + support_ * (1 - sum(body_list[:i]) / 100) * days_ # <<-- change here 'days_' to 'coef_ * period'
+                sum_i = rate_ * (1 - sum(body_list[:i]) / 100) * coef_ * period + support_ * (1 - sum(body_list[:i]) / 100) * coef_ * period
             
             sums.append(sum_i)
             total_sum = sum(sums)
@@ -197,25 +197,23 @@ def adding_dates(df, start_date, payment_period):
         date = datetime.strptime(start_date, '%Y-%m-%d')
     else:
         date = start_date
-    
-    # df.loc[0, 'date'] = date + timedelta(days=int(df.loc[0, 'Коэфициент'] * period))
-    df.loc[0, 'date'] = date + timedelta(days=int(period)) # <<--- changes here !!!! look upper
-    
+
+    df.loc[0, 'date'] = date + timedelta(days=int(df.loc[0, 'Коэфициент'] * period))
+
     for i in range(1, len(df)):
-        # df.loc[i, 'date'] = df.loc[i-1, 'date'] + timedelta(days=int(df.loc[i, 'Коэфициент'] * period))
-        df.loc[i, 'date'] = df.loc[i-1, 'date'] + timedelta(days=int(180 - period)) # <<--- changes here !!!!
-    
+        df.loc[i, 'date'] = df.loc[i-1, 'date'] + timedelta(days=int(df.loc[i, 'Коэфициент'] * period))
+
     date_ranges = []
-    
+
     date_range = pd.date_range(start=date, end=df.loc[0, 'date']).tolist()
     date_ranges.append(date_range)
-    
+
     for i in range(1, len(df)):
         start = df.loc[i-1, 'date'] + timedelta(days=1)
         end = df.loc[i, 'date']
         date_range = pd.date_range(start=start, end=end).tolist()
         date_ranges.append(date_range)
-    
+
     df['date_ranges'] = date_ranges
     return df
 
@@ -262,8 +260,7 @@ def result_function (dynamic_body_paments, interval_params, start_date, payment_
     last_rate = last_rate_calculation(df_dates, payment_calendar_df)
 
     final = product_constructor(df_dates, payment_calendar_df, amount, comission, payment_period, last_rate)
-    # return final, df
-    return final, df_dates
+    return final, df
 
 def collect_end_of_month_dates(start_date, loan_period):
 
@@ -368,18 +365,14 @@ def calendar_body(dynamic_body_paments, schema, start_date, payment_period, loan
     
     return calendar_body_df
     
-def daily_rates_amount_schema (rates_dict, body_df, accrued_period, start_date):
-    rates_schema = rates_dict["schema"]
-    rates_df = rates_dict["df"]
+def daily_rates_amount_schema (rates_df, body_df, accrued_period):
     one_day_df = payment_calendar_builder(start_date, accrued_period, loan_period)
-    
     for i in range(1, len(one_day_df)):
-        for j in range(len(rates_schema)):
-            if one_day_df.loc[i, 'payment_date'] in rates_schema.loc[j, 'date_ranges']:
-                one_day_df.loc[i, 'rate'] = rates_schema.loc[j, 'Ставка']
-                one_day_df.loc[i, 'support'] = rates_schema.loc[j, 'Комиссия за обслуживание']
-    one_day_df.loc[1:,'rate'] = one_day_df['rate'][1:].fillna(rates_df.loc[len(rates_df)-1, 'rate'])
-    
+        for j in range(len(rates_df)):
+            if one_day_df.loc[i, 'payment_date'] in rates_df.loc[j, 'date_ranges']:
+                one_day_df.loc[i, 'rate'] = rates_df.loc[j, 'rate']
+                one_day_df.loc[i, 'support'] = rates_df.loc[j, 'support']
+                    
     for i in range(len(one_day_df)):
         for j in range(len(rates_df)):
             if one_day_df.loc[i, 'payment_date'] == rates_df.loc[j, 'payment_date']:
@@ -461,15 +454,15 @@ def first_part_builder (start_date,
                         dynamic_body_paments,
                         accrued_period,
                         accrued_end):
-    rates_ = rates_schema (product_4_5, dynamic_body_paments, interval_params, start_date, payment_period, loan_period, amount, comission)
+    rates = rates_schema (product_4_5, dynamic_body_paments, interval_params, start_date, payment_period, loan_period, amount, comission)
     
-    body_df = calendar_body (dynamic_body_paments, rates_['schema'], start_date, payment_period, loan_period, amount)
+    body_df = calendar_body (dynamic_body_paments, rates['schema'], start_date, payment_period, loan_period, amount)
     
-    daily_schema = daily_rates_amount_schema (rates_, body_df, accrued_period, start_date)
+    daily_schema = daily_rates_amount_schema (rates["df"], body_df, accrued_period)
     
     rates_absolute = shift_one_day_payment(daily_schema, amount, accrued_end, payment_period)
     
-    rates_payments = rates_payment_calendar(rates_absolute, rates_["df"])
+    rates_payments = rates_payment_calendar(rates_absolute, rates["df"])
     cf_df = calculating_cf(rates_payments, body_df)
     cf_df.rename(columns={'payment_date': 'payment_date', 
                         'CF': 'CF',
@@ -477,7 +470,7 @@ def first_part_builder (start_date,
                         'rate_absolute': 'CF_interest',
                         'support_absolute': 'CF_support',
                         'comission_absolute': 'CF_comission'}, inplace=True)
-    return cf_df, rates_absolute, rates_["schema"] 
+    return cf_df, rates_absolute, rates["schema"] 
 
 def collect_end_of_month_dates(start_date, loan_period):
     if isinstance(start_date, str):
@@ -618,9 +611,9 @@ def second_part_df_builder (main_part, daily_percents_sum, start_date, loan_peri
     st.write(f"Общие расходы по кредиту: {round(cost, 2)} грн.")
     st.write(f"Общая стоимость кредита: {round(value, 2)} грн.")
     st.write(f"Среднедневная номинальная ставка: {round(cost / amount / loan_period * 100, 4)}%")
-    st.write(f"Всего проценты: {sum(merged_df.CF_interest)}")
-    st.write(f"Всего комиссия за обслуживание: {sum(merged_df.CF_support)}")
-    st.write(f"Всего комиссия за выдачу: {sum(merged_df.CF_comission)}")
+    st.write(f"Всего проценты: {round(sum(merged_df.CF_interest),2)} грн.")
+    st.write(f"Всего комиссия за обслуживание: {round(sum(merged_df.CF_support),2)} грн.")
+    st.write(f"Всего комиссия за выдачу: {round(sum(merged_df.CF_comission),2)} грн.")
     
     return merged_df, metrics_df
 
