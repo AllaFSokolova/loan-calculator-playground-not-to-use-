@@ -15,10 +15,10 @@ st.image(img_resized, use_container_width = True)
 
 # ----------------------->>>>>>>>>>>>  Initial Parameters  <<<<<<<<<<<------------------------------
 start_date = st.date_input("Дата начала кредита:", value=datetime.today().date())
-payment_period = st.number_input("Период платежа (в днях):", value=30, min_value=1)
+payment_period = st.number_input("Период платежа (в днях):", value=15, min_value=1)
 loan_period = st.number_input("Срок кредита (в днях):", value=360, min_value=1)
 amount = st.number_input("Сумма:", value=1000, min_value=0)
-comission = st.number_input("Разовая комиссия (%):", value=5)
+comission = st.number_input("Разовая комиссия (%):", value=25)
 product_4_5 = st.checkbox("Продукт 4 / 5", value=False)
 dynamic_body_paments = st.checkbox("Предусмотрены частичные погашения тела", value=False)
 accrued_period = st.number_input("Начисления процентов раз в (дни):", value=1, min_value=1)
@@ -29,7 +29,7 @@ accrued_end = st.selectbox("Начисления по принципу:", option
     index=2)
 
 st.subheader("Введите параметры для интервалов:")
-num_intervals = st.number_input("Количество интервалов:", value=3, min_value=1, max_value=30, step=1)
+num_intervals = st.number_input("Количество интервалов:", value=2, min_value=1, max_value=30, step=1)
 
 days = [0] * num_intervals
 rates = [0.0000] * num_intervals
