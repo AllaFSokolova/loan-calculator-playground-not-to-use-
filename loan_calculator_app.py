@@ -26,7 +26,7 @@ accrued_end = st.selectbox("Начисления по принципу:", option
                             format_func=lambda x: {0: "Начисления на начало периода",
                                                     1: "Начисления на конец периода",
                                                     2: "Начисления по принципу нашего продукта"}[x],
-    index=2)
+    index=1)
 
 st.subheader("Введите параметры для интервалов:")
 num_intervals = st.number_input("Количество интервалов:", value=2, min_value=1, max_value=30, step=1)
